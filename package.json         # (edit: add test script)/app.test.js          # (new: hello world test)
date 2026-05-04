@@ -1,0 +1,16 @@
+{
+  "name": "movie-recomendations-app",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^27.0.0"
+  }
+}
+
+const assert = require('assert');
+test('hello world!', () => {
+  assert.strictEqual('Hello World', 'Hello World');
+});

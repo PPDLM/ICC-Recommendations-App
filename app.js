@@ -18,45 +18,38 @@ const dbConfig = {
   // NO SSL properties at all
 };
 
-async function startApp() {
-  try {
-    console.log("Attempting to connect to Postgres...");
-    await initDatabase(dbConfig);
-    const pool = new Pool(dbConfig);
+let pool;
 
-    app.get("/api/recommendations", async (req, res) => {
-      try {
-        const result = await pool.query("SELECT * FROM recommendations ORDER BY created_at DESC");
-        res.json(result.rows);
-      } catch (err) {
-        console.error("❌ GET ERROR:", err.message);
-        res.status(500).json([]);
-      }
-    });
-
-    app.post("/api/recommendations", async (req, res) => {
-      console.log("📥 Received POST request with data:", req.body);
-      const { title, type, genre, year, comment, rating, image_url } = req.body;
-      try {
-        await pool.query(
-          `INSERT INTO recommendations (title, type, genre, year, comment, rating, image_url)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [title, type, genre, year, comment, rating, image_url]
-        );
-        console.log("✅ Successfully inserted into DB");
-        res.status(201).json({ message: "Created" });
-      } catch (err) {
-        console.error("❌ DATABASE INSERT ERROR:", err.message);
-        res.status(500).json({ error: err.message });
-      }
-    });
-
-    app.listen(process.env.PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${process.env.PORT}`);
-    });
-  } catch (err) {
-    console.error("💥 CRITICAL STARTUP ERROR:", err.message);
-  }
+async function setup() {
+  await initDatabase(dbConfig);
+  pool = new Pool(dbConfig);
 }
 
-startApp();
+app.get("/api/recommendations", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM recommendations ORDER BY created_at DESC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET ERROR:", err.message);
+    res.status(500).json([]);
+  }
+});
+
+app.post("/api/recommendations", async (req, res) => {
+  console.log("📥 Received POST request with data:", req.body);
+  const { title, type, genre, year, comment, rating, image_url } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO recommendations (title, type, genre, year, comment, rating, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [title, type, genre, year, comment, rating, image_url]
+    );
+    console.log("✅ Successfully inserted into DB");
+    res.status(201).json({ message: "Created" });
+  } catch (err) {
+    console.error("❌ DATABASE INSERT ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = { app, setup };
