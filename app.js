@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const { Pool } = require("pg");
+const mysql = require("mysql2/promise");
 const cors = require("cors");
 const initDatabase = require("./db/init");
 
@@ -14,21 +14,20 @@ const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 5432,
-  // NO SSL properties at all
+  port: process.env.DB_PORT || 3306,
 };
 
 let pool;
 
 async function setup() {
   await initDatabase(dbConfig);
-  pool = new Pool(dbConfig);
+  pool = mysql.createPool(dbConfig);
 }
 
 app.get("/api/recommendations", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM recommendations ORDER BY created_at DESC");
-    res.json(result.rows);
+    const [rows] = await pool.query("SELECT * FROM recommendations ORDER BY created_at DESC");
+    res.json(rows);
   } catch (err) {
     console.error("❌ GET ERROR:", err.message);
     res.status(500).json([]);
@@ -41,7 +40,7 @@ app.post("/api/recommendations", async (req, res) => {
   try {
     await pool.query(
       `INSERT INTO recommendations (title, type, genre, year, comment, rating, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [title, type, genre, year, comment, rating, image_url]
     );
     console.log("✅ Successfully inserted into DB");

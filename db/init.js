@@ -1,36 +1,21 @@
-const { Client } = require("pg");
+const mysql = require("mysql2/promise");
 
 async function initDatabase(config) {
-const client = new Client({
-  host: config.host,
-  user: config.user,
-  password: config.password,
-  port: config.port,
-  database: config.database,
-  // DELETE the ssl: { ... } lines here too
-});
+  const connection = await mysql.createConnection({
+    host: config.host,
+    user: config.user,
+    password: config.password,
+    port: config.port,
+    database: config.database,
+  });
 
-  await client.connect();
-
-  // Create Custom Types for ENUMs if they don't exist
-  await client.query(`
-    DO $$ BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'movie_type') THEN
-        CREATE TYPE movie_type AS ENUM ('movie', 'series');
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'genre_type') THEN
-        CREATE TYPE genre_type AS ENUM ('Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Thriller', 'Animation');
-      END IF;
-    END $$;
-  `);
-
-  // Create Table
-  await client.query(`
+  // Create Table with MySQL syntax
+  await connection.query(`
     CREATE TABLE IF NOT EXISTS recommendations (
-      id SERIAL PRIMARY KEY,
+      id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(150),
-      type movie_type,
-      genre genre_type,
+      type ENUM('movie', 'series'),
+      genre ENUM('Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Thriller', 'Animation'),
       year INT,
       comment TEXT,
       rating INT,
@@ -39,7 +24,7 @@ const client = new Client({
     );
   `);
 
-  await client.end();
+  await connection.end();
 }
 
 module.exports = initDatabase;
