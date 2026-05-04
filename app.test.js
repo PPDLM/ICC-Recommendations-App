@@ -3,10 +3,10 @@ const request = require('supertest');
 // 1. Create the mock function first
 const mockQuery = jest.fn();
 
-// 2. Mock 'pg' before requiring the app, returning our mockQuery
-jest.mock('pg', () => {
+// 2. Mock 'mysql2/promise' before requiring the app
+jest.mock('mysql2/promise', () => {
   return {
-    Pool: jest.fn(() => ({
+    createPool: jest.fn(() => ({
       query: mockQuery,
     })),
   };
@@ -31,7 +31,8 @@ describe('API Endpoints', () => {
   describe('GET /api/recommendations', () => {
     it('should return recommendations', async () => {
       const fakeRows = [{ id: 1, title: 'Test Movie' }];
-      mockQuery.mockResolvedValueOnce({ rows: fakeRows });
+      // MySQL returns an array where the first element is the rows: [rows, fields]
+      mockQuery.mockResolvedValueOnce([fakeRows, []]);
 
       const res = await request(app).get('/api/recommendations');
       expect(res.statusCode).toBe(200);
@@ -49,11 +50,11 @@ describe('API Endpoints', () => {
 
   describe('POST /api/recommendations', () => {
     it('should insert a recommendation', async () => {
-      mockQuery.mockResolvedValueOnce({});
+      mockQuery.mockResolvedValueOnce([{}]);
 
       const payload = {
         title: 'Test Movie',
-        type: 'Movie',
+        type: 'movie', // Note: Make sure this matches your ENUM ('movie' or 'series', lowercase)
         genre: 'Action',
         year: 2023,
         comment: 'Great!',
@@ -71,7 +72,7 @@ describe('API Endpoints', () => {
 
       const payload = {
         title: 'Test Movie',
-        type: 'Movie',
+        type: 'movie', 
         genre: 'Action',
         year: 2023,
         comment: 'Great!',

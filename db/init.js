@@ -7,6 +7,7 @@ async function initDatabase(config) {
     password: config.password,
     port: config.port,
     database: config.database,
+    ssl: config.ssl
   });
 
   // Create Table with MySQL syntax
