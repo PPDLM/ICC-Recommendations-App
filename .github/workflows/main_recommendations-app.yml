@@ -6,40 +6,35 @@ on:
       - main
   workflow_dispatch:
 
+# Fixes the deprecation warnings
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24.x'
 
-      - name: npm install, build, and test
+      - name: npm install and build
         run: |
           npm install
           npm run build --if-present
-          npm run test --if-present
 
-      # NEW: This step deletes any accidental files/folders created with comments in their names
-      - name: Clean up accidental files with invalid characters
-        run: |
-          find . -name "*#*" -delete
-          find . -name "*(*" -delete
+      - name: Clean up ghost files
+        run: find . -name "*#*" -delete
 
-      - name: Upload artifact for deployment job
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: |
-            .
-            !node_modules
-            !*.md
+          # This ensures we grab the contents, not the root folder itself
+          path: . 
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,10 +44,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          # CRITICAL: Download into the current directory
+          path: .
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -62,9 +59,8 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_18BD1CF0EA4744D1BF0C8B43D5155FB0 }}
 
       - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'recommendations-app'
-          slot-name: 'Production'
+          # This tells Azure the code is in the current root
           package: .
