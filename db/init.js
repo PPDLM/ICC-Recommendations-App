@@ -26,10 +26,17 @@ async function initDatabase(config) {
       year INT,
       comment TEXT,
       rating INT,
-      image_url VARCHAR(255),
+      image_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // 4. Force upgrade the existing table in Azure
+  try {
+    await connection.query(`ALTER TABLE recommendations MODIFY COLUMN image_url TEXT;`);
+  } catch (e) {
+    console.log("Table alter skipped: ", e.message);
+  }
 
   await connection.end();
 }
